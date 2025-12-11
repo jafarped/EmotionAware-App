@@ -1,6 +1,7 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { SYSTEM_INSTRUCTION_TEACHER } from '../constants';
 
+// Access API key using process.env as per guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Audio Context for playback
