@@ -1,0 +1,7 @@
+{
+  "name": "EmoBuddy - Kids Emotion Coach",
+  "description": "A fun, interactive avatar friend that teaches children about emotions and how to handle them effectively.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
