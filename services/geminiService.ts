@@ -1,8 +1,8 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { SYSTEM_INSTRUCTION_TEACHER } from '../constants';
 
-// Robust API Key Retrieval: Checks process.env (Node/Webpack) and import.meta.env (Vite)
-const getApiKey = () => {
+// Robust API Key Retrieval: Checks process.env, import.meta.env, and LocalStorage
+export const getApiKey = (): string => {
   if (typeof process !== 'undefined' && process.env?.API_KEY) {
     return process.env.API_KEY;
   }
@@ -11,15 +11,28 @@ const getApiKey = () => {
     // @ts-ignore
     return import.meta.env.VITE_API_KEY;
   }
-  return '';
+  return localStorage.getItem('gemini_api_key') || '';
 };
 
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+export const hasValidKey = (): boolean => {
+  return !!getApiKey();
+};
+
+export const saveApiKey = (key: string): void => {
+  localStorage.setItem('gemini_api_key', key);
+};
 
 // Audio Context for playback
 let outputAudioContext: AudioContext | null = null;
 
 export const generateEmotionAdvice = async (emotion: string): Promise<{ text: string, audioData?: string }> => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return { text: "Please provide an API Key to start.", audioData: undefined };
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  
   let adviceText = "";
 
   // Step 1: Generate Text Advice
@@ -38,7 +51,7 @@ export const generateEmotionAdvice = async (emotion: string): Promise<{ text: st
 
   } catch (error) {
     console.error("Error generating text advice:", error);
-    return { text: "Oh no! I had trouble thinking. Try again?", audioData: undefined };
+    return { text: "Oh no! I had trouble thinking. Please check your API Key.", audioData: undefined };
   }
 
   // Step 2: Generate Audio (TTS) from the advice

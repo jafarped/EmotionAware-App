@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Smile, Mic, Volume2, ArrowLeft, Sparkles, MessageCircle } from 'lucide-react';
+import { Smile, Mic, Volume2, ArrowLeft, Sparkles, MessageCircle, Key, ExternalLink } from 'lucide-react';
 
 import Avatar from './components/Avatar';
 import EmotionCard from './components/EmotionCard';
 import { EMOTIONS, SYSTEM_INSTRUCTION_TEACHER } from './constants';
 import { EmotionType, EmotionConfig } from './types';
-import { generateEmotionAdvice, playAudio } from './services/geminiService';
+import { generateEmotionAdvice, playAudio, getApiKey, saveApiKey, hasValidKey } from './services/geminiService';
 import { LiveClient } from './services/liveClient';
 
 const App: React.FC = () => {
@@ -17,22 +17,25 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<'SELECT' | 'LEARN' | 'LIVE'>('SELECT');
   const [isTalking, setIsTalking] = useState(false);
   const [liveVolume, setLiveVolume] = useState(0);
+  
+  // API Key State
+  const [hasKey, setHasKey] = useState<boolean>(false);
+  const [tempKey, setTempKey] = useState("");
 
   // Live Client Ref
   const liveClientRef = useRef<LiveClient | null>(null);
   const liveCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Helper to safely get API Key
-  const getApiKey = () => {
-    if (typeof process !== 'undefined' && process.env?.API_KEY) {
-      return process.env.API_KEY;
+  useEffect(() => {
+    setHasKey(hasValidKey());
+  }, []);
+
+  const handleKeySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (tempKey.trim().length > 10) {
+      saveApiKey(tempKey.trim());
+      setHasKey(true);
     }
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_KEY) {
-      // @ts-ignore
-      return import.meta.env.VITE_API_KEY;
-    }
-    return '';
   };
 
   // Handle Emotion Selection
@@ -125,6 +128,57 @@ const App: React.FC = () => {
     }
   }, [mode, liveVolume]);
 
+  // --- RENDER API KEY SCREEN IF NO KEY ---
+  if (!hasKey) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+        <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100">
+           <div className="flex justify-center mb-6">
+             <div className="bg-indigo-100 p-4 rounded-full text-indigo-600">
+               <Key size={32} />
+             </div>
+           </div>
+           
+           <h1 className="text-2xl font-bold text-center text-slate-800 mb-2">Welcome to EmoBuddy!</h1>
+           <p className="text-slate-500 text-center mb-8">
+             To start your emotional learning journey, please enter your Gemini API Key below.
+           </p>
+
+           <form onSubmit={handleKeySubmit} className="space-y-4">
+             <div>
+               <label className="block text-sm font-medium text-slate-700 mb-1">Google Gemini API Key</label>
+               <input 
+                 type="password" 
+                 value={tempKey}
+                 onChange={(e) => setTempKey(e.target.value)}
+                 placeholder="AIza..."
+                 className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                 required
+               />
+             </div>
+             
+             <button 
+               type="submit"
+               className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-lg shadow-lg hover:bg-indigo-700 transition transform active:scale-95"
+             >
+               Start EmoBuddy
+             </button>
+           </form>
+
+           <div className="mt-6 text-center">
+             <a 
+               href="https://aistudio.google.com/app/apikey" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="text-indigo-600 hover:text-indigo-800 text-sm font-medium inline-flex items-center gap-1"
+             >
+               Get a free key here <ExternalLink size={14} />
+             </a>
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col items-center">
