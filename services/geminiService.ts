@@ -1,8 +1,20 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { SYSTEM_INSTRUCTION_TEACHER } from '../constants';
 
-// Access API key using process.env as per guidelines
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Robust API Key Retrieval: Checks process.env (Node/Webpack) and import.meta.env (Vite)
+const getApiKey = () => {
+  if (typeof process !== 'undefined' && process.env?.API_KEY) {
+    return process.env.API_KEY;
+  }
+  // @ts-ignore - import.meta is available in ES modules
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_KEY) {
+    // @ts-ignore
+    return import.meta.env.VITE_API_KEY;
+  }
+  return '';
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 // Audio Context for playback
 let outputAudioContext: AudioContext | null = null;

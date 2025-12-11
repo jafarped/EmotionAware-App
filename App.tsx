@@ -22,6 +22,19 @@ const App: React.FC = () => {
   const liveClientRef = useRef<LiveClient | null>(null);
   const liveCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Helper to safely get API Key
+  const getApiKey = () => {
+    if (typeof process !== 'undefined' && process.env?.API_KEY) {
+      return process.env.API_KEY;
+    }
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_KEY) {
+      // @ts-ignore
+      return import.meta.env.VITE_API_KEY;
+    }
+    return '';
+  };
+
   // Handle Emotion Selection
   const handleEmotionSelect = async (config: EmotionConfig) => {
     setSelectedEmotion(config);
@@ -63,7 +76,12 @@ const App: React.FC = () => {
     setIsLoading(true); // initializing
     
     try {
-      const client = new LiveClient(process.env.API_KEY || '');
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        throw new Error("API Key not found");
+      }
+      
+      const client = new LiveClient(apiKey);
       client.setOnVolumeChange((vol) => {
          setLiveVolume(vol);
       });
@@ -74,7 +92,7 @@ const App: React.FC = () => {
       setAdvice("I'm listening! Say 'Hello'!");
     } catch (e) {
       console.error(e);
-      setAdvice("Oops! Could not connect to microphone.");
+      setAdvice("Oops! Could not connect to microphone or missing API Key.");
       setIsLoading(false);
     }
   };
