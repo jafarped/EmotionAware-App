@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Smile, Mic, Volume2, ArrowLeft, Sparkles, MessageCircle, Key, ExternalLink } from 'lucide-react';
+import { Smile, Mic, Volume2, ArrowLeft, Sparkles, MessageCircle, Key, ExternalLink, RefreshCw } from 'lucide-react';
 
 import Avatar from './components/Avatar';
 import EmotionCard from './components/EmotionCard';
 import { EMOTIONS, SYSTEM_INSTRUCTION_TEACHER } from './constants';
 import { EmotionType, EmotionConfig } from './types';
-import { generateEmotionAdvice, playAudio, getApiKey, saveApiKey, hasValidKey } from './services/geminiService';
+import { generateEmotionAdvice, playAudio, getApiKey, saveApiKey, hasValidKey, removeApiKey } from './services/geminiService';
 import { LiveClient } from './services/liveClient';
 
 const App: React.FC = () => {
@@ -36,6 +36,14 @@ const App: React.FC = () => {
       saveApiKey(tempKey.trim());
       setHasKey(true);
     }
+  };
+
+  const handleResetKey = () => {
+    removeApiKey();
+    setHasKey(false);
+    setTempKey("");
+    setMode('SELECT');
+    setSelectedEmotion(null);
   };
 
   // Handle Emotion Selection
@@ -191,11 +199,13 @@ const App: React.FC = () => {
            </div>
            <h1 className="text-2xl font-bold tracking-tight text-indigo-900">EmoBuddy</h1>
         </div>
-        {mode !== 'SELECT' && (
-          <button onClick={handleBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition">
-            <ArrowLeft size={24} />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+           {mode !== 'SELECT' && (
+            <button onClick={handleBack} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition">
+              <ArrowLeft size={24} />
+            </button>
+           )}
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -278,12 +288,25 @@ const App: React.FC = () => {
                    ))}
                  </div>
                  
-                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-start gap-3">
-                   <Sparkles className="text-yellow-500 flex-shrink-0 mt-1" />
-                   <p className="text-sm text-slate-500 italic">
-                     Remember: It's okay to feel {selectedEmotion.type.toLowerCase()}. Everyone feels this way sometimes!
-                   </p>
-                 </div>
+                 {/* Error Recovery Button */}
+                 {advice.includes("Oh no!") && (
+                   <button 
+                     onClick={handleResetKey}
+                     className="mt-4 flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg font-bold hover:bg-red-200 transition"
+                   >
+                     <RefreshCw size={18} />
+                     Fix API Key
+                   </button>
+                 )}
+
+                 {!advice.includes("Oh no!") && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-start gap-3">
+                    <Sparkles className="text-yellow-500 flex-shrink-0 mt-1" />
+                    <p className="text-sm text-slate-500 italic">
+                      Remember: It's okay to feel {selectedEmotion.type.toLowerCase()}. Everyone feels this way sometimes!
+                    </p>
+                  </div>
+                 )}
               </div>
             )}
           </div>
@@ -316,8 +339,11 @@ const App: React.FC = () => {
 
       </main>
 
-      <footer className="p-6 text-center text-slate-400 text-sm">
+      <footer className="p-6 text-center text-slate-400 text-sm flex flex-col items-center gap-2">
         <p>Designed for Kids • Powered by Gemini</p>
+        <button onClick={handleResetKey} className="text-xs text-indigo-400 underline hover:text-indigo-600">
+           Change API Key
+        </button>
       </footer>
     </div>
   );

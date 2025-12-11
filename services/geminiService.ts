@@ -22,6 +22,10 @@ export const saveApiKey = (key: string): void => {
   localStorage.setItem('gemini_api_key', key);
 };
 
+export const removeApiKey = (): void => {
+  localStorage.removeItem('gemini_api_key');
+};
+
 // Audio Context for playback
 let outputAudioContext: AudioContext | null = null;
 
@@ -49,9 +53,18 @@ export const generateEmotionAdvice = async (emotion: string): Promise<{ text: st
 
     adviceText = textResponse.text || "I'm listening...";
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating text advice:", error);
-    return { text: "Oh no! I had trouble thinking. Please check your API Key.", audioData: undefined };
+    // return a specific error message so the UI can help the user
+    let msg = "Oh no! I had trouble thinking.";
+    if (error.message?.includes('400') || error.message?.includes('API key')) {
+      msg += " (The API Key seems invalid).";
+    } else if (error.message?.includes('404')) {
+      msg += " (Model not found).";
+    } else {
+      msg += ` (${error.message || 'Unknown error'}).`;
+    }
+    return { text: msg, audioData: undefined };
   }
 
   // Step 2: Generate Audio (TTS) from the advice
@@ -59,7 +72,7 @@ export const generateEmotionAdvice = async (emotion: string): Promise<{ text: st
   let audioData: string | undefined;
   
   try {
-    if (adviceText && adviceText !== "I'm listening...") {
+    if (adviceText && !adviceText.includes("Oh no!") && adviceText !== "I'm listening...") {
         // Clean text for TTS (optional, but good practice to remove markdown like bolding)
         const ttsText = adviceText.replace(/[*#]/g, ''); 
         
